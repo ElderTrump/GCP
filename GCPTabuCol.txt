@@ -1,0 +1,285 @@
+#include<stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
+#include <time.h>
+#define  Size  126
+struct Node
+{
+	int ID;
+	Node *next;
+};
+int array[Size][Size] = {0};
+int array_ajacent[Size][Size] = {0};
+int array_ajacent_length[Size] = {0};
+//迭代变量
+int numbest = 125;
+int Iter = 0; 
+//禁忌表
+int TabuTenure[Size][6] = {0}; 
+//记录冲突节点个数 
+int num = 1;
+//所图颜色数 
+int NumberOfColor = 5;
+//仇人表 
+int Adjacent_Color_Table[Size][6] = {0};
+//节点颜色数组 
+int NodeColor[Size];
+//节点结构体 
+struct Node node[Size];
+//最优冲突数 
+int f_best = 1000000;
+//冲突节点数组
+int Conf[Size] = {0};
+//记录任意一个节点在Conf数组中的位置
+int Pos[Size];
+void initialize()//read the data in and initialize the color
+{
+	int f = 0;
+	int i = 1;
+	int j = 0;
+	int first = 0;
+	int second = 0;
+	int count = 0; 
+	char data[100];
+	srand((unsigned)time(0)); 
+	FILE * fp = fopen("F:\\DSJC125.1.col", "r");
+	if(!fp)
+    {
+        printf("can't open file\n");
+    }
+    while(!feof(fp))
+    {
+        fscanf(fp,"%s",&data);
+        if(i == 2)
+        first = atoi(data);
+        else if(i == 0)
+        second = atoi(data);
+        else 
+		{
+			array[first][second] = array[second][first] = 1;
+			
+		}
+        i = (i+1)%3;
+    }
+/*	for (i = 1; i < Size; i++)
+	{
+		node[i].ID = i;
+		Node *tmp = &(node[i]);
+		Node *p;
+		int k = 0;
+		for (j = 1; j < Size; j++)
+		{
+			if (array[i][j] == 1)
+			{
+				p=(struct Node *)malloc(sizeof(struct Node));
+				p->ID = j;
+				p->next = NULL;
+				tmp->next = p;
+				tmp = tmp->next;
+			}
+		}
+	}*/
+	//输出测试 
+	for (i = 1; i < Size; i++)
+	{
+		NodeColor[i] = rand()%NumberOfColor + 1;
+	    printf("No.%d is %d\n",i,NodeColor[i]);
+	}
+	for (i = 1; i < Size; i++)
+	{
+		for (j = 1; j < Size; j++)
+		{
+			if(j != i && array[i][j] == 1)
+			{
+				Adjacent_Color_Table[i][NodeColor[j]]++;
+			}
+		}
+	}
+	for (i = 1; i < Size; i++)
+	{
+		printf("%d:",i);
+		for (j = 1; j < NumberOfColor+1; j++)
+		{
+			printf("%d ",Adjacent_Color_Table[i][j]);
+			if(j == NodeColor[i])
+			{
+				f += Adjacent_Color_Table[i][j];
+				if(Adjacent_Color_Table[i][j]>0)
+				{
+					Conf[num]=i; Pos[i]=num++;
+				}
+			} 
+		}
+		printf("\n");
+	}
+	 for (i = 1; i < num; i++)
+	{
+	 	printf("conflict:%d = %d\n",i,Conf[i]);
+	}
+	f_best = f/2;
+	printf("%d",f_best);
+	/*Node *tmp = &(node[125]);
+	printf("%d ",tmp->next->ID);*/
+	getchar();	
+}
+//暂时忽略禁忌最优
+//ToDo 
+void FindMove()
+{
+	
+	int i,j;
+	int imp = 0;
+	int tmp;
+	int keyi,keyj,keyii,keyjj;
+	int count1 = 2;
+	int count2 = 2;
+	
+	for(i = 1;i < num;i++)
+	{
+		tmp = Adjacent_Color_Table[Conf[i]][NodeColor[Conf[i]]];//设定第i个冲突节点的原始冲突数 
+		for(j = 1;j <= NumberOfColor;j++)
+		{
+			if(j != NodeColor[Conf[i]])
+			{
+				if(Adjacent_Color_Table[Conf[i]][j]<tmp&&TabuTenure[Conf[i]][j]<=Iter)
+			{
+				count1 = 2;
+				tmp = Adjacent_Color_Table[Conf[i]][j];
+				keyj = j;
+				//printf("change:[%d][%d] tmp = %d \n",Conf[i],j,tmp);
+			}
+			else if(Adjacent_Color_Table[Conf[i]][j]==tmp&&(rand()%count1==0)&&TabuTenure[Conf[i]][j]<=Iter)
+			{
+				count1++;
+				tmp = Adjacent_Color_Table[Conf[i]][j];
+				keyj = j;
+				//printf("***change:[%d][%d] tmp = %d \n",Conf[i],j,tmp);
+			} 
+		
+	
+		if(Adjacent_Color_Table[Conf[i]][NodeColor[Conf[i]]]-tmp>imp)
+		{
+			    count2 = 2;
+			    imp = Adjacent_Color_Table[Conf[i]][NodeColor[Conf[i]]]-tmp;
+				keyii = Conf[i];
+				keyjj = keyj;
+				//printf("************change:[%d][%d] imp = %d \n",keyii,keyjj,imp);
+		}
+		else if(Adjacent_Color_Table[Conf[i]][NodeColor[Conf[i]]]-tmp==imp&&(rand()%count2==0))
+			{
+				count2++;
+				imp = Adjacent_Color_Table[Conf[i]][NodeColor[Conf[i]]]-tmp;
+				keyii = Conf[i];
+				keyjj = keyj;
+				//printf("000************000change:[%d][%d] imp = %d \n",keyii,keyjj,imp);
+			} 
+			}
+			}
+	}
+	//printf("imp = %d, keyi = %d, keyj = %d",imp,keyii,keyjj);
+	//换色操作 
+	{
+		int tmpcolor =  NodeColor[keyii];
+		NodeColor[keyii] = keyjj;
+		//printf("\nold color is %d and new color is %d\n",tmpcolor,NodeColor[keyii]);
+		int j;
+		for(j = 1;j < array_ajacent_length[keyii]; j++)
+		{
+			if(Adjacent_Color_Table[array_ajacent[keyii][j]][tmpcolor]<0||Adjacent_Color_Table[array_ajacent[keyii][j]][NodeColor[keyii]]<0)
+			printf("\n\n\nERROR!!!!\n\n\n");
+			Adjacent_Color_Table[array_ajacent[keyii][j]][tmpcolor] -= 1;
+			if(Adjacent_Color_Table[array_ajacent[keyii][j]][tmpcolor]==0&&NodeColor[array_ajacent[keyii][j]]==tmpcolor)
+			{
+				Conf[Pos[array_ajacent[keyii][j]]]=Conf[num];
+                Pos[Conf[num]]=Pos[array_ajacent[keyii][j]];
+                num--;
+                //printf("%d号节点冲突解除\n",array_ajacent[keyii][j]);
+			}
+			Adjacent_Color_Table[array_ajacent[keyii][j]][NodeColor[keyii]] += 1;
+			if(Adjacent_Color_Table[array_ajacent[keyii][j]][NodeColor[keyii]]==1
+			&&
+			NodeColor[array_ajacent[keyii][j]]==NodeColor[keyii])
+		   {
+				Conf[num]=array_ajacent[keyii][j];
+			    Pos[array_ajacent[keyii][j]]=num++;
+			    //printf("%d号节点发生冲突\n",array_ajacent[keyii][j]);
+		   }
+		}
+		TabuTenure[keyii][tmpcolor] = Iter+10+rand()%10;
+		if(imp>0&&Adjacent_Color_Table[keyii][NodeColor[keyii]]==0)
+		{
+			int i;
+			Conf[Pos[keyii]]=Conf[num];
+            Pos[Conf[num]]=Pos[keyii];
+            num-=1;
+            //printf("%d号节点冲突解除\n",keyii);
+		}
+		
+	}
+	f_best-=imp;
+	/*for(i=1;i<num;i++)
+	{
+		printf("No.%d is %d\n",i,Conf[i]);
+	}*/
+	if(num<numbest)
+	{
+		numbest = num;
+		printf("%d次：%d   num = %d\n",Iter,f_best,num);
+		for(i=1;i<num;i++)
+	{
+		printf("No.%d is %d\n",i,Conf[i]);
+	}
+	}
+	
+	Iter++;
+/*	for (i = 1; i < Size; i++)
+	{
+	    printf("No.%d is %d\n",i,NodeColor[i]);
+	}
+	for (i = 1; i < Size; i++)
+	{
+		printf("%d:",i);
+		for (j = 1; j < NumberOfColor+1; j++)
+		{
+			printf("%d ",Adjacent_Color_Table[i][j]);
+		}
+		printf("\n");
+	}*/
+}
+void calculateAjacent()
+{
+	int counter;
+	for(int i=1; i< Size ; i++)
+	{
+		counter=1;
+		for(int j=1; j< Size; j++)
+		{
+			if(array[i][j] == 1) array_ajacent[i][counter++] = j;	
+			
+		}
+		array_ajacent_length[i] = counter;
+	}
+    for(int i=1; i< Size ; i++)
+    {
+    	/*printf("%d:",i);
+    	for(int j=1; j< array_ajacent_length[i]; j++)
+    	{
+    		printf("%d ",array_ajacent[i][j]);
+		}
+		printf("sum is %d\n",	array_ajacent_length[i]);*/
+	}
+    
+}
+/*void Tabu(i,oldcolor,newcolor)
+{
+	
+}*/
+int main()
+{
+	srand((unsigned)time(0)); 
+	initialize();
+	calculateAjacent();
+	while(1)
+	FindMove();
+}
